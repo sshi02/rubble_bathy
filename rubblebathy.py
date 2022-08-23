@@ -1,5 +1,5 @@
 import numpy as np
-import sys, getopt, json
+import sys, getopt, json, os
 
 def main(argv):
     # init vars
@@ -149,15 +149,18 @@ def main(argv):
                     bathy[y, x] = toedep - rslope * \
                      (h / rslope + w + h / lslope - x + toe - 2)
             if printfric:
-                farray[y, x - 1] = friction
-                
+                farray[y, x - 1] = friction               
     ## smoothing
 
+    # output
+    if outdir == None:
+        outdir = os.getcwd()
+
     if debug:
-        np.savetxt('test.txt', bathy, fmt='%.6E')
-    np.savetxt('depth.txt', bathy, fmt='%.6E')
+        np.savetxt(os.path.join(outdir, 'test.txt'), bathy, fmt='%.6E')
+    np.savetxt(os.path.join(outdir,'depth.txt'), bathy, fmt='%.6E')
     if printfric:
-        np.savetxt('friction.txt', farray, fmt='%.6E')
+        np.savetxt(os.path.join(outdir, 'friction.txt'), farray, fmt='%.6E')
 
 # main() arg call
 if __name__ == '__main__':
