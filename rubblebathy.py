@@ -32,7 +32,7 @@ def main(argv):
     try:
         opts, _ = getopt.getopt(argv, 'i:o:r:l:x:h:w:c:', 
         ['json=', 'flat=', 'slope=', 'xslope=', 'nglob=', 
-            'mglob=', 'toedep=', 'dx=', 'pushtail', 'frictionfile=', 'friction=',
+            'mglob=', 'toedep=', 'dx=', 'trunctail', 'frictionfile=', 'friction=',
             'debug'])
     except getopt.GetoptError:
         print("Error: invalid usage")
@@ -70,7 +70,7 @@ def main(argv):
             m = int(arg)
         elif opt in '--nglob':
             n = int(arg)
-        elif opt in '--pushtail':
+        elif opt in '--trunctail':
             pushtail = False
         # elif opt in '--dx':           # NOT SURE IF NEEDED...
         #     dx = float(arg)
@@ -117,7 +117,7 @@ def main(argv):
                     m = int(arg)
                 if key == '--nglob':
                     n = int(arg)
-                # if key == '--dx':           # NOT SURE IF NEEDED...
+                # if key == '--dx':           # TODO
                 #     dx = float(arg)
                 if key == '--debug':
                     debug = True
