@@ -13,6 +13,7 @@ def main(argv):
     rslope = None       # rightward slope
     lslope = None       # leftward slope
     toe = None          # structure toe
+    cen = None          # structure center
     h = None            # crest height
     w = None            # crest width
     n = None            # nglob
@@ -20,28 +21,26 @@ def main(argv):
     bathy = None        # bathy array
     toedep = None       # depth at toe of structure
     dx = 1              # dx, default 1 (m)
-    smoothing = True    # smoothing, default True
     friction = None     # friction coef
     farray = None       # friction array
-
     ## operational args
     printfric = False
     debug = False
+    pushtail = True
 
     # parse argv[]
     try:
-        opts, _ = getopt.getopt(argv, 'i:o:r:l:x:h:w:', 
+        opts, _ = getopt.getopt(argv, 'i:o:r:l:x:h:w:c:', 
         ['json=', 'flat=', 'slope=', 'xslope=', 'nglob=', 
-            'mglob=', 'toedep=', 'dx=', 'smoothing', 'frictionfile=', 'friction=',
+            'mglob=', 'toedep=', 'dx=', 'pushtail', 'frictionfile=', 'friction=',
             'debug'])
     except getopt.GetoptError:
         print("Error: invalid usage")
         sys.exit(2)
-    
     for opt, arg in opts:
         if opt in '-i':
             inputfile = arg
-        elif opt in '-o':               # TODO: full implementation
+        elif opt in '-o':               
             outdir = arg
         elif opt in '--json':
             jsonfile = arg
@@ -71,18 +70,19 @@ def main(argv):
             m = int(arg)
         elif opt in '--nglob':
             n = int(arg)
+        elif opt in '--pushtail':
+            pushtail = False
         # elif opt in '--dx':           # NOT SURE IF NEEDED...
         #     dx = float(arg)
         elif opt in '--debug':
             debug = True
 
-    # parse .json
+    # parse .json TODO
     if not jsonfile == None:
         ## import json warning
         if not (rslope == None and lslope == None and toe == None \
                 and w == None and h == None):
             print("warning: importing JSON, ignoring arguments")
-
         ## parse json
         with open(jsonfile) as file:
             x = json.loads(file)
@@ -91,7 +91,36 @@ def main(argv):
                     inputfile = x[key]
                 if key == 'outputdir':
                     outdir = x[key]
-                ### TODO: Parse JSON as such above
+                if key == 'flatdep':
+                    flatdepth = x[key]
+                if key == '--slope':
+                    slope = float(arg)
+                if key ==  '--xslope':
+                    xslope = int(arg)
+                if key ==  '--frictionfile':
+                    frictionfile = arg
+                if key == '--friction':
+                    friction = float(arg)
+                if key == '-r':
+                    rslope = float(arg)
+                if key == '-l':
+                    lslope = float(arg)
+                if key == '-x':
+                    toe = int(arg)
+                if key == '-w':
+                    w = float(arg)
+                if key == '-h':
+                    h = float(arg)
+                if key == '--toedep':
+                    toedep = float(arg)
+                if key == '--mglob':
+                    m = int(arg)
+                if key == '--nglob':
+                    n = int(arg)
+                # if key == '--dx':           # NOT SURE IF NEEDED...
+                #     dx = float(arg)
+                if key == '--debug':
+                    debug = True
     
     # establish bathymetry
     ## data
@@ -125,18 +154,26 @@ def main(argv):
             print('Error: friction coefficient not supplied')
             sys.exit()
         printfric = True
-    
 
     # insert structure
+    ## rslope/lslope correction
+    rslope = rslope * dx
+    lslope = lslope * dx
+    ## toe vs center of crest width check
+    if not toe == None and not cen == None:
+        print("Error: found toe and center of crest width argument, terminating")
+        sys.exit()
     ## check for input toe depth
     if toedep == None:
         toedep = 0
         for y in bathy[:, toe]:
             toedep += y
         toedep = toedep / bathy[:, toe].size
-    ## add structure on depth
+    ## add structure on depth by toe
     for y in range(n):
         for x in range(toe, toe + int(h / rslope + w + h / lslope)):
+            if x >= m:
+                break
             if x < toe + h / lslope:
                 if bathy[y, x] > toedep - lslope * (x - toe + 1):
                     bathy[y, x] = toedep - lslope * (x - toe + 1)
@@ -150,12 +187,20 @@ def main(argv):
                      (h / rslope + w + h / lslope - x + toe - 2)
             if printfric:
                 farray[y, x - 1] = friction               
+    ## adjustment -- push tail to bottom
+    if pushtail:
+        for y in range(n):
+            x = toe + int(h / rslope + w + h / lslope) - 1
+            if x >= m:
+                break
+            while toedep - rslope * (h / rslope + w + h / lslope - x + toe - 2) < bathy[y, x]:
+               bathy[y, x] = toedep - rslope * (h / rslope + w + h / lslope - x + toe - 2)
+               x += 1
     ## smoothing
 
     # output
     if outdir == None:
         outdir = os.getcwd()
-
     if debug:
         np.savetxt(os.path.join(outdir, 'test.txt'), bathy, fmt='%.6E')
     np.savetxt(os.path.join(outdir,'depth.txt'), bathy, fmt='%.6E')
