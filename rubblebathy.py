@@ -117,8 +117,8 @@ def main(argv):
                     m = int(arg)
                 if key == '--nglob':
                     n = int(arg)
-                # if key == '--dx':           # TODO
-                #     dx = float(arg)
+                if key == '--dx':
+                    dx = float(arg)
                 if key == '--debug':
                     debug = True
     
@@ -171,30 +171,31 @@ def main(argv):
         toedep = toedep / bathy[:, toe].size
     ## add structure on depth by toe
     for y in range(n):
-        for x in range(toe, toe + int(h / rslope + w + h / lslope)):
+        for x in range(toe, toe + int(h / rslope / dx + w / dx + h / lslope / dx)):
             if x >= m:
                 break
-            if x < toe + h / lslope:
-                if bathy[y, x] > toedep - lslope * (x - toe + 1):
-                    bathy[y, x] = toedep - lslope * (x - toe + 1)
-            elif x < toe + h / lslope + w - 2:
+            if x < toe + h / lslope / dx:
+                if bathy[y, x] > toedep - lslope * (x - toe + 1) * dx:
+                    bathy[y, x] = toedep - lslope * (x - toe + 1) * dx
+            elif x < toe + h / lslope / dx + w / dx - 2:
                 if bathy[y, x] > toedep - h:
                     bathy[y, x] = toedep - h
-            elif x < toe + h / rslope + w + h / lslope - 2:
+            elif x < toe + h / rslope / dx + w / dx + h / lslope / dx - 2:
                 if bathy[y, x] > toedep - rslope * \
-                        (h / rslope + w + h / lslope - x + toe - 2):
-                    bathy[y, x] = toedep - rslope * \
-                     (h / rslope + w + h / lslope - x + toe - 2)
+                    (h / rslope / dx + w / dx + h / lslope / dx - x + toe - 2) * dx:
+                        bathy[y, x] = toedep - rslope * \
+                            (h / rslope / dx + w / dx + h / lslope / dx - x + toe - 2) * dx
             if printfric:
                 farray[y, x - 1] = friction               
     ## adjustment -- push tail to bottom
     if pushtail:
         for y in range(n):
-            x = toe + int(h / rslope + w + h / lslope) - 1
+            x = toe + int(h / rslope / dx + w / dx + h / lslope / dx) - 1
             if x >= m:
                 break
-            while toedep - rslope * (h / rslope + w + h / lslope - x + toe - 2) < bathy[y, x]:
-               bathy[y, x] = toedep - rslope * (h / rslope + w + h / lslope - x + toe - 2)
+            while toedep - rslope * (h / rslope / dx + w / dx + h / lslope / dx - x + toe - 2) * dx \
+                 < bathy[y, x]:
+               bathy[y, x] = toedep - rslope * (h / rslope / dx + w / dx + h / lslope / dx - x + toe - 2) * dx
                x += 1
     ## smoothing
 
